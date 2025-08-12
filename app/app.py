@@ -4,6 +4,7 @@ import time
 
 from numpy.random import default_rng as rng
 from backend.chat import query_llm
+from backend.funcs import run_sql
 
 # Setting the app title
 st.title("Text-2-SQL")
@@ -25,7 +26,7 @@ if clear_btn:
 with st.container(height=500, border=False):
 
     # Using columns for page layout
-    c1, c2 = st.columns([1.5, 1], gap='medium', border=True)
+    c1, c2 = st.columns([1, 1], gap='medium', border=True)
 
     with c1:
 
@@ -50,10 +51,17 @@ with st.container(height=500, border=False):
             with st.spinner("Thinking...", show_time=True):
                 response = query_llm(prompt)
 
+            print(f'Response = {response}')
+            
             msg_hist['assistant'].append(response.message.content)          # Add assistant message to history
             st.chat_message('assistant').write(response.message.content)
             st.session_state.msg_hist = msg_hist                        # Store message history to session_state
 
 
     with c2:
-        st.write('Results will appear here.')
+        run_sql_button = st.button("Run SQL", type='secondary')
+
+        if run_sql_button:
+            df = run_sql()
+
+            st.dataframe(df, hide_index=True)
