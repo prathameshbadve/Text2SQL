@@ -7,7 +7,7 @@ def query_llm(user_prompt, model='llama3.2'):
   response: ChatResponse = chat(model=model, messages=[
     {
       'role': 'user',
-      'content': f'{user_prompt}. Only give the sql query and no other explanation. I only want one query, no other plain text',
+      'content': f'{user_prompt}',
     },
   ])
 
