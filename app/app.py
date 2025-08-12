@@ -6,6 +6,9 @@ from numpy.random import default_rng as rng
 from backend.chat import query_llm
 from backend.funcs import run_sql
 
+# Setting page configurations
+st.set_page_config(layout="wide")
+
 # Setting the app title
 st.title("Text-2-SQL")
 
@@ -52,7 +55,7 @@ with st.container(height=500, border=False):
                 response = query_llm(prompt)
 
             print(f'Response = {response}')
-            
+
             msg_hist['assistant'].append(response.message.content)          # Add assistant message to history
             st.chat_message('assistant').write(response.message.content)
             st.session_state.msg_hist = msg_hist                        # Store message history to session_state
