@@ -1,0 +1,6 @@
+pandas
+streamlit
+llama-cpp-python
+llama-stack
+ollama
+sqlglot
