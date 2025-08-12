@@ -1,0 +1,5 @@
+1.
+Give me the SQL query to get the top 10 entries form the table named 'Customers'.
+
+2.
+Which customers made the most purchases in the month of July 2025. Give me the SQL query to extract this data from the two tables. The Customers table has information about all customers and the Sales table has information on all sales.
