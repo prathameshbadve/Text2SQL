@@ -7,5 +7,3 @@
 create_test_db.py
 db_metadata
 pagila_dataset
-admin_page.py
-run_app.py
