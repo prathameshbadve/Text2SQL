@@ -5,19 +5,24 @@ import time
 from numpy.random import default_rng as rng
 from backend.chat import query_llm
 from backend.funcs import run_sql, extract_sql
+from backend.db import run_query
+
+
+#### MANAGING STREAMLIT SESSION_STATE
+
+if 'msg_hist' not in st.session_state:
+    msg_hist = {'user': [], 'assistant': []}
+else:
+    msg_hist = st.session_state['msg_hist']
+
+
+#### STREAMLIT UI COMPONENTS
 
 # Setting page configurations
 st.set_page_config(layout="wide")
 
 # Setting the app title
 st.title("Text-2-SQL")
-
-# Getting data from session_state, otherwise initializing
-if 'msg_hist' not in st.session_state:
-    msg_hist = {'user': [], 'assistant': []}
-else:
-    msg_hist = st.session_state['msg_hist']
-
 
 # Reset button to clear chat history
 clear_btn = st.button('Clear chat', type='primary')
@@ -66,9 +71,21 @@ with st.container(height=500, border=False):
 
 
     with c2:
-        run_sql_button = st.button("Run SQL", type='secondary')
 
-        if run_sql_button:
-            df = run_sql()
+        sql_query = st.chat_input(
+            "Write SQL Query here",
+            accept_file=False
+        )
 
+        if sql_query:
+
+            df = run_query(sql_query)
             st.dataframe(df, hide_index=True)
+        
+
+        # run_sql_button = st.button("Run SQL", type='secondary')
+
+        # if run_sql_button:
+        #     df = run_sql()
+
+        #     st.dataframe(df, hide_index=True)
