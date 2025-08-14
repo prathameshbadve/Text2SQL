@@ -10,6 +10,8 @@ import weaviate
 import weaviate.classes as wvc
 from weaviate.exceptions import WeaviateBaseError
 
+
+#### Parse DB Schema from metadata Markdown
 def parse_db_schema_markdown(md_file_path: str) -> List[Dict]:
 
     """
@@ -109,6 +111,7 @@ def parse_db_schema_markdown(md_file_path: str) -> List[Dict]:
     return tables
 
 
+#### Create embeddings for table metadata from parsed tables
 def create_embeddings(table_entries: List[Dict], model_name='sentence-transformers/all-MiniLM-L6-v2') -> np.ndarray:
 
     """
@@ -133,6 +136,7 @@ def create_embeddings(table_entries: List[Dict], model_name='sentence-transforme
     return vectors
 
 
+#### Create embeddings for lists of strings
 def embed_texts(texts: List[str], model) -> np.ndarray:
 
     """Create embeddings for a list of texts."""
@@ -140,6 +144,7 @@ def embed_texts(texts: List[str], model) -> np.ndarray:
     return model.encode(texts, show_progress_bar=True)
 
 
+#### Setup Weaviate Collection
 def setup_weaviate_collection(client: weaviate.Client, collection_name='DBSchema'):
 
     """
@@ -147,7 +152,7 @@ def setup_weaviate_collection(client: weaviate.Client, collection_name='DBSchema
     """
 
     try:
-        if collection_name in [c.name for c in client.collections.list_all()]:
+        if collection_name in [c for c in client.collections.list_all()]:
             print(f"Collection '{collection_name}' already exists. Skipping creation.")
             return
         
@@ -165,6 +170,7 @@ def setup_weaviate_collection(client: weaviate.Client, collection_name='DBSchema
         sys.exit(f"❌ Failed to create collection in Weaviate: {e}")
 
 
+#### Auto delete tables missing in db_schema
 def auto_delete_missing_tables(client, collection_name: str, current_tables: List[str]):
     col = client.collections.get(collection_name)
 
@@ -182,6 +188,7 @@ def auto_delete_missing_tables(client, collection_name: str, current_tables: Lis
         print("ℹ️ No tables to delete")
 
 
+# Batch insertion of embeddings to Vector DB
 def batch_insert_embeddings(client: weaviate.Client, collection_name: str, table_entries: List[Dict], embeddings: np.ndarray, batch_size=20):
 
     """
@@ -211,7 +218,7 @@ def batch_insert_embeddings(client: weaviate.Client, collection_name: str, table
     print("✅ Batch insertion completed.")
 
 
-
+#### Incremental Upsert to Vector DB
 def incremental_upsert(client, collection_name: str, tables: List[Dict], model):
 
     col = client.collections.get(collection_name)
@@ -259,7 +266,7 @@ def incremental_upsert(client, collection_name: str, tables: List[Dict], model):
     print(f"✅ Incremental sync complete: {inserted_count} inserted, {updated_count} updated, {skipped_count} skipped")
 
 
-
+#### Test queries to Vector DB
 def test_query(client: weaviate.Client, collection_name: str, query_text: str, limit=3):
 
     """Test a similarity search in Weaviate."""

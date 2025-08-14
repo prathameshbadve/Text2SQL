@@ -5,9 +5,8 @@ import sys
 
 from sentence_transformers import SentenceTransformer
 from backend.db import get_db_schema, run_query
-from backend.create_kb import parse_db_schema_markdown, create_embeddings, \
-                        setup_weaviate_collection, batch_insert_embeddings, test_query, \
-                        incremental_upsert, auto_delete_missing_tables
+from backend.create_kb import parse_db_schema_markdown, setup_weaviate_collection, \
+                                test_query, incremental_upsert, auto_delete_missing_tables
 
 collection_name = 'DBSchema'
 
