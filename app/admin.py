@@ -3,9 +3,11 @@ import streamlit as st
 import weaviate
 import sys
 
+from sentence_transformers import SentenceTransformer
 from backend.db import get_db_schema, run_query
 from backend.create_kb import parse_db_schema_markdown, create_embeddings, \
-                        setup_weaviate_collection, batch_insert_embeddings, test_query
+                        setup_weaviate_collection, batch_insert_embeddings, test_query, \
+                        incremental_upsert, auto_delete_missing_tables
 
 collection_name = 'DBSchema'
 
@@ -22,9 +24,10 @@ if upload_embeddings:
 
     # Parse tables metadata from markdown file
     parsed_tables = parse_db_schema_markdown(md_file_path)
+    table_names = [t["tableName"] for t in parsed_tables]
 
-    # Create embeddings from parsed tables
-    embeddings = create_embeddings(parsed_tables)
+    # Create embeddings model
+    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
     # Setup weaviate collection
     try:
@@ -32,8 +35,11 @@ if upload_embeddings:
             print('✅ Connected to Weaviate.')
             setup_weaviate_collection(client, collection_name)
 
+            # Auto-delete before upsert
+            auto_delete_missing_tables(client, collection_name, table_names)
+
             # Insert data
-            batch_insert_embeddings(client, collection_name, parsed_tables, embeddings, batch_size=20)
+            incremental_upsert(client, collection_name, parsed_tables, model)
 
     except Exception as e:
         sys.exit(f"❌ Could not connect to Weaviate: {e}")
@@ -47,6 +53,3 @@ vector_query = st.chat_input(
 if vector_query:
     with weaviate.connect_to_local() as client:
         test_query(client, collection_name, vector_query)
-
-        # for obj in results.objects:
-        #     st.chat_message('assistant').write(f"📌 {obj.properties['tableName']} -> {obj.properties['schemaText'][:80]}...")

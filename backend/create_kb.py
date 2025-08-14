@@ -4,6 +4,7 @@ from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
 import numpy as np
+import uuid
 
 import weaviate
 import weaviate.classes as wvc
@@ -132,6 +133,13 @@ def create_embeddings(table_entries: List[Dict], model_name='sentence-transforme
     return vectors
 
 
+def embed_texts(texts: List[str], model) -> np.ndarray:
+
+    """Create embeddings for a list of texts."""
+
+    return model.encode(texts, show_progress_bar=True)
+
+
 def setup_weaviate_collection(client: weaviate.Client, collection_name='DBSchema'):
 
     """
@@ -155,6 +163,23 @@ def setup_weaviate_collection(client: weaviate.Client, collection_name='DBSchema
         
     except WeaviateBaseError as e:
         sys.exit(f"❌ Failed to create collection in Weaviate: {e}")
+
+
+def auto_delete_missing_tables(client, collection_name: str, current_tables: List[str]):
+    col = client.collections.get(collection_name)
+
+    existing_objs = col.query.fetch_objects(limit=500)
+    deleted_count = 0
+    for obj in existing_objs.objects:
+        table_name = obj.properties["tableName"]
+        if table_name not in current_tables:
+            col.data.delete_by_id(str(obj.uuid))
+            print(f"🗑️ Deleted table '{table_name}' from Weaviate")
+            deleted_count += 1
+    if deleted_count:
+        print(f"✅ Auto-deleted {deleted_count} removed tables")
+    else:
+        print("ℹ️ No tables to delete")
 
 
 def batch_insert_embeddings(client: weaviate.Client, collection_name: str, table_entries: List[Dict], embeddings: np.ndarray, batch_size=20):
@@ -186,6 +211,55 @@ def batch_insert_embeddings(client: weaviate.Client, collection_name: str, table
     print("✅ Batch insertion completed.")
 
 
+
+def incremental_upsert(client, collection_name: str, tables: List[Dict], model):
+
+    col = client.collections.get(collection_name)
+
+    # Fetch existing objects
+    print("🔍 Fetching existing objects from Weaviate...")
+    all_existing = {}
+    result = col.query.fetch_objects(limit=500)
+    for obj in result.objects:
+        all_existing[obj.properties["tableName"]] = {
+            "uuid": str(obj.uuid),
+            "schemaText": obj.properties["schemaText"]
+        }
+
+    # Track stats
+    inserted_count = 0
+    updated_count = 0
+    skipped_count = 0
+
+    with col.batch.dynamic() as batch:
+        for table in tables:
+            existing = all_existing.get(table["tableName"])
+            if not existing:
+                # New object
+                vec = embed_texts([table["schemaText"]], model)[0].tolist()
+                batch.add_object(
+                    uuid=uuid.uuid5(uuid.NAMESPACE_DNS, table["tableName"]),
+                    properties=table,
+                    vector=vec
+                )
+                inserted_count += 1
+            else:
+                if existing["schemaText"] != table["schemaText"]:
+                    # Changed schema
+                    vec = embed_texts([table["schemaText"]], model)[0].tolist()
+                    batch.add_object(
+                        uuid=existing["uuid"],
+                        properties=table,
+                        vector=vec
+                    )
+                    updated_count += 1
+                else:
+                    skipped_count += 1
+
+    print(f"✅ Incremental sync complete: {inserted_count} inserted, {updated_count} updated, {skipped_count} skipped")
+
+
+
 def test_query(client: weaviate.Client, collection_name: str, query_text: str, limit=3):
 
     """Test a similarity search in Weaviate."""
@@ -199,9 +273,6 @@ def test_query(client: weaviate.Client, collection_name: str, query_text: str, l
         limit=limit
     )
 
-    print('-----')
-    print(type(results))
-    print('-----')
-
     for obj in results.objects:
         print(f"📌 {obj.properties['tableName']} -> {obj.properties['schemaText'][:80]}...")
+        print('-----')
