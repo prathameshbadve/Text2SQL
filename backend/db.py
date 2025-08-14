@@ -112,4 +112,7 @@ def get_db_schema():
 
     # Save markdown
     Path("backend/db_metadata/db_schema.md").write_text("\n".join(markdown_lines))
-    print("Markdown file created.")
+    md_file_path = "backend/db_metadata/db_schema.md"
+    print(f"Markdown file created at {md_file_path}")
+
+    return md_file_path
