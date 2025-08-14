@@ -3,6 +3,7 @@
 *.sqlite3
 *.db
 *.pyc
+*.sh
 
 create_test_db.py
 db_metadata

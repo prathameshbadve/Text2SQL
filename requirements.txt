@@ -1,6 +1,10 @@
+numpy
 pandas
 streamlit
-llama-cpp-python
-llama-stack
 ollama
 sqlglot
+weaviate-client
+sentence-transformers
+faker
+dotenv
+sqlalchemy
