@@ -16,4 +16,6 @@ The objective is to develop an AI agentic application that generates SQL based o
 
 #### Version 0.1.0
 
-For this version, I am using the open source LLM by Meta - Llama3.2:3b as the main LLM, [Weaviate](https://weaviate.io)
+For this version, I am using the open source LLM by Meta - Llama3.2:3b as the main LLM, [Weaviate](https://weaviate.io) as the Vector DB, PostgreSQL for hosting the open source dataset [Pagila](https://github.com/devrimgunduz/pagila) and streamlit for the app UI.
+
+![V0.1.0 LLD](images/v010_LLD.png "LLD")
